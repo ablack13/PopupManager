@@ -7,6 +7,7 @@ import android.support.v4.view.GravityCompat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 import android.view.WindowManager;
 
 /**
@@ -37,6 +38,10 @@ public class PopupManager {
             public abstract int getOffsetX();
 
             public abstract int getOffsetY();
+
+            public abstract ViewPropertyAnimator showPopupAnimation();
+
+            public abstract ViewPropertyAnimator hidePopupAnimation();
         }
 
         public ViewHolder(PopupManager manager, View anchorView, View popupView) {
@@ -71,11 +76,11 @@ public class PopupManager {
         }
 
         public void showPopup() {
-            panelManager.showPanel(this);
+            panelManager.showPopup(this);
         }
 
         public void hidePopup() {
-            panelManager.hidePanel(this);
+            panelManager.hidePopup(this);
         }
 
         public Property getProperty() {
@@ -93,8 +98,7 @@ public class PopupManager {
         windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
     }
 
-    private void showPanel(ViewHolder viewHolder) {
-        viewHolder.setShowed(true);
+    private void showPopup(ViewHolder viewHolder) {
         IBinder windowToken = viewHolder.getAnchorView().getWindowToken();
         if (windowToken != null) {
             WindowManager.LayoutParams p = createPopupLayout(windowToken);
@@ -102,16 +106,38 @@ public class PopupManager {
             p.gravity = Gravity.TOP | GravityCompat.START;
             updateLayoutParamsForPosition(viewHolder, p);
             invokePopup(viewHolder, p);
+            if (viewHolder.getProperty().showPopupAnimation() != null) {
+                viewHolder.getProperty().showPopupAnimation().start();
+            }
         }
     }
 
-    private void hidePanel(ViewHolder viewHolder) {
-        viewHolder.setShowed(false);
-        windowManager.removeViewImmediate(viewHolder.getPopupView());
+    private void hidePopup(final ViewHolder viewHolder) {
+        if (viewHolder.getProperty().hidePopupAnimation() != null) {
+            viewHolder.getProperty().hidePopupAnimation().start();
+            viewHolder.getAnchorView().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    removePopup(viewHolder);
+                }
+            }, viewHolder.getProperty().hidePopupAnimation().getDuration());
+        } else {
+            removePopup(viewHolder);
+        }
     }
 
     private void invokePopup(ViewHolder viewHolder, WindowManager.LayoutParams p) {
-        windowManager.addView(viewHolder.getPopupView(), p);
+        if (!viewHolder.isPopupShow()) {
+            viewHolder.setShowed(true);
+            windowManager.addView(viewHolder.getPopupView(), p);
+        }
+    }
+
+    private void removePopup(ViewHolder viewHolder) {
+        if (viewHolder.isPopupShow()) {
+            viewHolder.setShowed(false);
+            windowManager.removeViewImmediate(viewHolder.getPopupView());
+        }
     }
 
     private WindowManager.LayoutParams createPopupLayout(IBinder token) {

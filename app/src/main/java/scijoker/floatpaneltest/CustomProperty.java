@@ -1,6 +1,7 @@
 package scijoker.floatpaneltest;
 
 import android.view.ViewGroup;
+import android.view.ViewPropertyAnimator;
 
 import com.scijoker.popupmanager.PopupManager;
 
@@ -26,5 +27,15 @@ public class CustomProperty extends PopupManager.ViewHolder.Property {
     @Override
     public int getOffsetY() {
         return 400;
+    }
+
+    @Override
+    public ViewPropertyAnimator showPopupAnimation() {
+        return null;
+    }
+
+    @Override
+    public ViewPropertyAnimator hidePopupAnimation() {
+        return null;
     }
 }
